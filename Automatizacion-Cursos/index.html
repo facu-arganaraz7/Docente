@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inscripción automática a cursos docentes</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #121212;
+      color: white;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      padding: 1rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    h1 {
+      font-size: clamp(1.5rem, 4vw, 2.5rem);
+      margin-bottom: 1rem;
+      padding: 0 1rem;
+    }
+
+    .form-container {
+      width: min(90%, 600px);
+      margin: 1rem auto;
+      background-color: #1e1e1e;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.8rem;
+      margin-bottom: 1rem;
+      border: none;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 1rem;
+    }
+
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 0.8rem 2rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    #loader, #resultado, #error, #expirado {
+      margin: 2rem 0;
+      padding: 1rem;
+      font-size: clamp(1rem, 2vw, 1.2rem);
+    }
+
+    #loader {
+      display: none;
+    }
+
+    #error, #expirado {
+      display: none;
+      color: #ff4444;
+      background: rgba(255, 68, 68, 0.1);
+      border-radius: 4px;
+    }
+
+    #retry, #volver {
+      display: none;
+      margin: 1rem 0.5rem;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 0.5rem;
+      }
+
+      button {
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Inscripción automática a cursos docentes</h1>
+  <p>Multiusuario - ejecuta múltiples inscripciones</p>
+
+  <div id="formularios"></div>
+
+  <div id="loader">⏳ Ejecutando inscripciones... Por favor, espere...</div>
+  <p id="resultado"></p>
+  <p id="error"></p>
+  <p id="expirado"></p>
+  <button id="retry">Reintentar</button>
+
+  <script>
+    const totalFormularios = 3;
+
+    function crearFormulario(id) {
+      const div = document.createElement('div');
+      div.className = 'form-container';
+      div.innerHTML = `
+        <h3>Formulario ${id}</h3>
+        <input type="url" id="link${id}" placeholder="Link del curso" required>
+        <input type="text" id="cuil${id}" placeholder="CUIL / Usuario" required>
+        <input type="password" id="password${id}" placeholder="Contraseña" required>
+        <button onclick="enviarInscripcion(${id})">Inscribirme</button>
+      `;
+      return div;
+    }
+
+    for (let i = 1; i <= totalFormularios; i++) {
+      document.getElementById('formularios').appendChild(crearFormulario(i));
+    }
+
+    async function enviarInscripcion(id) {
+      const formData = new FormData();
+      formData.append("link", document.getElementById(`link${id}`).value);
+      formData.append("cuil", document.getElementById(`cuil${id}`).value);
+      formData.append("password", document.getElementById(`password${id}`).value);
+
+      document.getElementById('loader').style.display = 'block';
+
+      try {
+        const res = await fetch('http://127.0.0.1:8000/inscribir', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await res.json();
+        document.getElementById('resultado').innerText += `Formulario ${id}: ${result.message}\n`;
+      } catch (err) {
+        document.getElementById('error').innerText += `Formulario ${id}: ❌ Error al conectar con el backend.\n`;
+        document.getElementById('error').style.display = 'block';
+      } finally {
+        document.getElementById('loader').style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>
